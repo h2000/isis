@@ -37,7 +37,6 @@ import org.apache.isis.commons.internal.base._Casts;
 import org.apache.isis.commons.internal.collections._Lists;
 import org.apache.isis.commons.internal.collections._Sets;
 import org.apache.isis.commons.internal.memento._Mementos.SerializingAdapter;
-import org.apache.isis.metamodel.adapter.oid.ObjectNotFoundException;
 import org.apache.isis.metamodel.objectmanager.ObjectManager;
 import org.apache.isis.metamodel.objectmanager.load.ObjectLoader;
 import org.apache.isis.metamodel.spec.ManagedObject;
@@ -50,7 +49,7 @@ import lombok.val;
  *
  */
 @Service
-public class BookmarkServiceInternalDefault implements BookmarkService, SerializingAdapter {
+public class BookmarkServiceDefault implements BookmarkService, SerializingAdapter {
 
     @Inject private SpecificationLoader specificationLoader;
     @Inject private WrapperFactory wrapperFactory;
@@ -63,64 +62,19 @@ public class BookmarkServiceInternalDefault implements BookmarkService, Serializ
         return bookmark != null? lookup(bookmark): null;
     }
 
-    private Object lookupInternal(Bookmark bookmark, boolean denyRefresh) {
-        
-        if(bookmark == null) {
-            return null;
-        }
-        try {
-            
-            val spec = specificationLoader.loadSpecification(bookmark.getClass());
-            val identifier = bookmark.getIdentifier();
-            val objectLoadRequest = ObjectLoader.Request.of(spec, identifier);
-            
-            val adapter = objectManager.loadObject(objectLoadRequest);
-            
-            return adapter.getPojo();
-            
-            //legacy of
-            
-//            val rootOid = Factory.ofBookmark(bookmark);
-//
-//            if(rootOid.isViewModel()) {
-//                final ObjectAdapter adapter = ps.adapterFor(rootOid);
-//                final Object pojo = mapIfPresentElse(adapter, ObjectAdapter::getPojo, null);
-//
-//                return pojo;
-//
-//            } 
-//            if(denyRefresh) {
-//
-//                val pojo = ps.fetchPersistentPojoInTransaction(rootOid);
-//                return pojo;            
-//
-//            } 
-//            
-//            val adapter = ps.adapterFor(rootOid);
-//
-//            val pojo = mapIfPresentElse(adapter, ObjectAdapter::getPojo, null);
-//            acceptIfPresent(pojo, ps::refreshRootInTransaction);
-//            return pojo;
-            
-        } catch(ObjectNotFoundException ex) {
-            return null;
-        }
-    }
-    
-
     @Override
     public Object lookup(Bookmark bookmark) {
-        
         if(bookmark == null) {
             return null;
         }
-        //FIXME[2112] why would we ever store Service Beans as Bookmarks?        
-        //        final String objectType = bookmark.getObjectType();
-        //        final Object service = lookupService(objectType);
-        //        if(service != null) {
-        //            return service;
-        //        }
-        return lookupInternal(bookmark, true);
+        
+        val spec = specificationLoader.loadSpecification(bookmark.getClass());
+        val identifier = bookmark.getIdentifier();
+        val objectLoadRequest = ObjectLoader.Request.of(spec, identifier);
+        
+        val adapter = objectManager.loadObject(objectLoadRequest);
+        
+        return adapter.getPojo();
     }
 
     @Override
@@ -148,25 +102,6 @@ public class BookmarkServiceInternalDefault implements BookmarkService, Serializ
         val objectType = spec.getSpecId().asString();
         return new Bookmark(objectType, identifier);
     }
-
-    //FIXME[2112] why would we ever store Service Beans as Bookmarks?
-    //    private Map<String,Object> servicesByClassName;
-    //    private Object lookupService(final String className) {
-    //        cacheServicesByClassNameIfNecessary();
-    //        return servicesByClassName.get(className);
-    //    }
-    //
-    //    private void cacheServicesByClassNameIfNecessary() {
-    //        if (servicesByClassName == null) {
-    //            final Map<String,Object> servicesByClassName = _Maps.newHashMap();
-    //            final Stream<Object> registeredServices = serviceRegistry.streamServices();
-    //            registeredServices.forEach(registeredService->{
-    //                final String serviceClassName = registeredService.getClass().getName();
-    //                servicesByClassName.put(serviceClassName, registeredService);
-    //            });
-    //            this.servicesByClassName = servicesByClassName;
-    //        }
-    //    }
 
     // -- SERIALIZING ADAPTER IMPLEMENTATION
 
