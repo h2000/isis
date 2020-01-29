@@ -73,19 +73,6 @@
 
 		<!-- TEST DEPENDENCY -->
 
-		<dependency>
-			<groupId>org.apache.isis.core</groupId>
-			<artifactId>isis-core-unittestsupport</artifactId>
-			<scope>test</scope>
-			<exclusions>
-				<!-- whatever unittestsupport is dependent on, it should not be transitive -->
-				<exclusion>
-					<groupId>com.google.guava</groupId>
-					<artifactId>guava</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
 	</dependencies>
 
 </project>

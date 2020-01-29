@@ -78,10 +78,6 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.isis.core</groupId>
-                    <artifactId>isis-core-unittestsupport</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.junit.vintage</groupId>
                     <artifactId>junit-vintage-engine</artifactId>
                 </exclusion>

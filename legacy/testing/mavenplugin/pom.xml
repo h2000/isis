@@ -40,11 +40,6 @@
 			<scope>provided</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>org.apache.isis.core</groupId>
-			<artifactId>isis-core-unittestsupport</artifactId>
-		</dependency>
-
 		<!-- JUPITER -->
 		<dependency>
 			<!-- JUnit API for writing tests and extensions -->
