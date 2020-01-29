@@ -39,12 +39,6 @@ public class JUnitRuleMockery2Test_mockAnnotatedWithAllowing {
     @ClassUnderTest
     private CollaboratingUsingConstructorInjection collaborating;
 
-    // no longer necessary :-)
-    //    @Before
-    //	public void setUp() throws Exception {
-    //    	collaborating = (CollaboratingUsingConstructorInjection) context.getClassUnderTest();
-    //	}
-
     @Test
     public void invocationOnCollaboratorIsIgnored() {
         collaborating.collaborateWithCollaborator();
