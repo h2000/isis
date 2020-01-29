@@ -98,6 +98,12 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.picocontainer</groupId>
+            <artifactId>picocontainer</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 
