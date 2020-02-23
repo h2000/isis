@@ -35,6 +35,7 @@
 
 		<!-- this can be overridden using -Dflavor=... -->
 		<flavor>springboot</flavor>
+		<vaadin.version>14.1.17</vaadin.version>
 
 	</properties>
 
@@ -56,11 +57,34 @@
 			</resource>
 		</resources>
 	</build>
-
+	<dependencyManagement>
+	    <dependencies>
+	        <dependency>
+	            <groupId>com.vaadin</groupId>
+	            <artifactId>vaadin-bom</artifactId>
+	            <version>${vaadin.version}</version>
+	            <type>pom</type>
+	            <scope>import</scope>
+	        </dependency>
+	    </dependencies>
+	</dependencyManagement>
 	<dependencies>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-spring</artifactId>
+		</dependency>
+<!--		<dependency>-->
+<!--	        <groupId>com.vaadin</groupId>-->
+<!--	        <artifactId>vaadin-spring-boot-starter</artifactId>-->
+<!--	        <version>${vaadin.version}</version>-->
+<!--	    </dependency>-->
 
 		<!-- WEB APPLICATION DEPENDENCY BUNDLE -->
-		
+
 		<dependency>
 			<groupId>org.apache.isis.mavendeps</groupId>
 			<artifactId>isis-mavendeps-webapp</artifactId>
@@ -161,6 +185,19 @@
 							</execution>
 						</executions>
 					</plugin>
+					<plugin>
+						 <groupId>com.vaadin</groupId>
+						 <artifactId>vaadin-maven-plugin</artifactId>
+						 <version>${vaadin.version}</version>
+						 <executions>
+							 <execution>
+								 <goals>
+									 <goal>prepare-frontend</goal>
+									 <goal>build-frontend</goal>
+								 </goals>
+							 </execution>
+						 </executions>
+					 </plugin>
 				</plugins>
 			</build>
 		</profile>

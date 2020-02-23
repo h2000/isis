@@ -50,7 +50,7 @@ public class DemoHomePage extends DemoStub {
 
     @Override
     public String title() {
-        return "Demo Home Page";
+        return "Demo Home Page5";
     }
 
     @XmlElement @XmlJavaTypeAdapter(MarkupAdapter.class)

@@ -114,3 +114,9 @@ spring:
   banner:
     location: banner.txt
 
+#debug: true
+vaadin:
+  whitelisted-packages: com.vaadin
+  urlMapping: "/v/*"
+  servlet:
+      productionMode: true

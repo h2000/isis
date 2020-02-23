@@ -63,7 +63,7 @@ public class AssociatedActionDemo extends DemoStub {
     @Override
     public void initDefaults() {
         items.clear();
-        items.add(DemoItem.of("first"));
+        items.add(DemoItem.of("first2"));
         items.add(DemoItem.of("second"));
         items.add(DemoItem.of("third"));
         items.add(DemoItem.of("last"));

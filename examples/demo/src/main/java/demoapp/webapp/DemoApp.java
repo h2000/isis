@@ -18,20 +18,21 @@
  */
 package demoapp.webapp;
 
+import com.vaadin.flow.server.Constants;
+import com.vaadin.flow.spring.RootMappedCondition;
+import com.vaadin.flow.spring.SpringBootAutoConfiguration;
+import com.vaadin.flow.spring.SpringServlet;
+import com.vaadin.flow.spring.VaadinConfigurationProperties;
+import com.vaadin.flow.spring.VaadinServletContextInitializer;
+import com.vaadin.flow.spring.VaadinWebsocketEndpointExporter;
+import com.vaadin.flow.spring.annotation.EnableVaadin;
+import demoapp.dom.DemoModule;
+import demoapp.utils.LibraryPreloadingService;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.server.WebServerFactoryCustomizer;
-import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
-import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.annotation.PropertySources;
-
+import lombok.extern.log4j.Log4j2;
+import lombok.val;
 import org.apache.isis.core.config.presets.IsisPresets;
 import org.apache.isis.core.runtimeservices.IsisModuleCoreRuntimeServices;
 import org.apache.isis.extensions.cors.impl.IsisModuleExtCorsImpl;
@@ -52,32 +53,46 @@ import org.apache.isis.valuetypes.sse.ui.IsisModuleValSseUi;
 import org.apache.isis.viewer.restfulobjects.jaxrsresteasy4.IsisModuleViewerRestfulObjectsJaxrsResteasy4;
 import org.apache.isis.viewer.restfulobjects.viewer.IsisModuleViewerRestfulObjectsViewer;
 import org.apache.isis.viewer.wicket.viewer.IsisModuleViewerWicketViewer;
-
-import lombok.val;
-import lombok.extern.log4j.Log4j2;
-
-import demoapp.dom.DemoModule;
-import demoapp.utils.LibraryPreloadingService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.servlet.ServletContextInitializer;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.PropertySources;
+import org.springframework.util.ClassUtils;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 
 /**
  * Bootstrap the application.
  */
-@SpringBootApplication
+@Configuration
+@EnableAutoConfiguration(exclude = {SpringBootAutoConfiguration.class})
+@ComponentScan
 @Import({
     DemoApp.AppManifest.class,
+    VaadinConfigurationProperties.class
 })
+@EnableVaadin("demoapp.webapp")
 @Log4j2
 public class DemoApp extends SpringBootServletInitializer {
 
     /**
-     * 
      * @param args
-     * @implNote this is to support the <em>Spring Boot Maven Plugin</em>, which auto-detects an 
-     * entry point by searching for classes having a {@code main(...)}
+     * @implNote this is to support the <em>Spring Boot Maven Plugin</em>, which auto-detects an entry point by
+     * searching for classes having a {@code main(...)}
      */
     public static void main(String[] args) {
         //IsisPresets.prototyping();
-        SpringApplication.run(new Class[] { DemoApp.class }, args);
+        SpringApplication.run(new Class[]{DemoApp.class}, args);
     }
 
     /**
@@ -97,11 +112,11 @@ public class DemoApp extends SpringBootServletInitializer {
         IsisModuleViewerWicketViewer.class,
         IsisModuleValSseUi.class, // server sent events
         IsisModuleValAsciidocUi.class, // ascii-doc rendering support
-        
+
         // REST
         IsisModuleViewerRestfulObjectsViewer.class,
         IsisModuleViewerRestfulObjectsJaxrsResteasy4.class,
-        
+
         // CORS
         IsisModuleExtCorsImpl.class,
 
@@ -115,51 +130,113 @@ public class DemoApp extends SpringBootServletInitializer {
 
         IsisModuleIncModelMetaModel.class, // @Model support (incubator)
         IsisModuleExtExcelDownloadUi.class, // allows for collection download as excel
-        
+
         LibraryPreloadingService.class // just a performance enhancement
 
     })
     @ComponentScan(
-            basePackageClasses= {
-                    DemoModule.class
-            }
+        basePackageClasses = {
+            DemoModule.class
+        }
     )
     public static class AppManifest {
 
         @Bean
         public SecurityModuleConfig securityModuleConfigBean() {
             return SecurityModuleConfig.builder()
-                    .adminUserName("sven")
-                    .adminAdditionalPackagePermission("demoapp.dom")
-                    .adminAdditionalPackagePermission("org.apache.isis")
-                    .build();
+                .adminUserName("sven")
+                .adminAdditionalPackagePermission("demoapp.dom")
+                .adminAdditionalPackagePermission("org.apache.isis")
+                .build();
         }
 
         @Bean
         public PermissionsEvaluationService permissionsEvaluationService() {
             return new PermissionsEvaluationServiceAllowBeatsVeto();
         }
-        
+
         /**
-         * If available from {@code System.getProperty("ContextPath")}
-         * or {@code System.getenv("ContextPath")},
-         * sets the context path for the web server. The context should start with a "/" character 
-         * but not end with a "/" character. The default context path can be
-         * specified using an empty string.
+         * If available from {@code System.getProperty("ContextPath")} or {@code System.getenv("ContextPath")}, sets the
+         * context path for the web server. The context should start with a "/" character but not end with a "/"
+         * character. The default context path can be specified using an empty string.
          */
         @Bean
         public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> webServerFactoryCustomizer() {
             return factory -> {
                 val contextPath = Optional
-                        .ofNullable(System.getProperty("ContextPath"))
-                        .orElse(System.getenv("ContextPath")); // fallback
-                if(contextPath!=null) {
+                    .ofNullable(System.getProperty("ContextPath"))
+                    .orElse(System.getenv("ContextPath")); // fallback
+                if (contextPath != null) {
                     factory.setContextPath(contextPath);
                     log.info("Setting context path to '{}'", contextPath);
                 }
             };
         }
-        
+
     }
+
+
+    @Autowired
+    private WebApplicationContext context;
+
+    @Autowired
+    private VaadinConfigurationProperties configurationProperties;
+
+
+    /**
+     * Creates a {@link ServletContextInitializer} instance.
+     *
+     * @return a custom ServletContextInitializer instance
+     */
+    @Bean
+    public ServletContextInitializer contextInitializer() {
+        return new VaadinServletContextInitializer(context);
+    }
+
+    /**
+     * Creates a {@link ServletRegistrationBean} instance with Spring aware Vaadin servlet.
+     *
+     * @return a custom ServletRegistrationBean instance
+     */
+    @Bean
+    public ServletRegistrationBean<SpringServlet> servletRegistrationBean() {
+        String mapping = configurationProperties.getUrlMapping();
+        Map<String, String> initParameters = new HashMap<>();
+        boolean rootMapping = RootMappedCondition.isRootMapping(mapping);
+        if (rootMapping) {
+            mapping = "/vaadinServlet/*";
+            initParameters.put(Constants.SERVLET_PARAMETER_PUSH_URL,
+                makeContextRelative(mapping.replace("*", "")));
+        }
+        ServletRegistrationBean<SpringServlet> registration = new ServletRegistrationBean<>(
+            new SpringServlet(context, rootMapping), mapping);
+        registration.setInitParameters(initParameters);
+        registration
+            .setAsyncSupported(configurationProperties.isAsyncSupported());
+        registration.setName(
+            ClassUtils.getShortNameAsProperty(SpringServlet.class));
+        return registration;
+    }
+
+    static String makeContextRelative(String url) {
+        // / -> context://
+        // foo -> context://foo
+        // /foo -> context://foo
+        if (url.startsWith("/")) {
+            url = url.substring(1);
+        }
+        return "context://" + url;
+    }
+
+    /**
+     * Deploys JSR-356 websocket endpoints when Atmosphere is available.
+     *
+     * @return the server endpoint exporter which does the actual work.
+     */
+    @Bean
+    public ServerEndpointExporter websocketEndpointDeployer() {
+        return new VaadinWebsocketEndpointExporter();
+    }
+
 
 }
