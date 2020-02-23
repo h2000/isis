@@ -77,11 +77,12 @@ public class MainView extends VerticalLayout {
 
         final MenuBar menuBar = new MenuBar();
         final Text selectedMenuItem = new Text("");
-        final Div actionResultDiv = new Div();
-        final Div message = new Div(new Text("Selected: "), selectedMenuItem, actionResultDiv);
+        final VerticalLayout actionResult = new VerticalLayout();
+        final Div message = new Div(new Text("Selected: "), selectedMenuItem);
 
         add(menuBar);
         add(message);
+        add(actionResult);
 
         final List<MenuSectionUiModel> menuSectionUiModels = buildMenuModel(log, isisWebAppCommonContext, bs3MenuBars);
         log.warn("menu model:\n ");
@@ -91,14 +92,15 @@ public class MainView extends VerticalLayout {
                     final MenuItem menuItem = menuBar.addItem(sectionUiModel.getName());
                     final SubMenu subMenu = menuItem.getSubMenu();
                     sectionUiModel.getServiceAndActionUiModels().forEach(a ->
-                            createActionOverviewAndBindRunAction(selectedMenuItem, actionResultDiv, subMenu, a));
+                            createActionOverviewAndBindRunAction(selectedMenuItem, actionResult, subMenu, a));
                 }
         );
+        setWidthFull();
     }
 
     private void createActionOverviewAndBindRunAction(
             final Text selected,
-            final Div actionResultDiv,
+            final VerticalLayout actionResultDiv,
             final SubMenu subMenu,
             final ServiceAndActionUiModel a
     ) {
@@ -106,20 +108,20 @@ public class MainView extends VerticalLayout {
         subMenu.addItem(objectAction.getName(),
                 e -> {
                     actionResultDiv.removeAll();
-                    final VerticalLayout verticalLayout = new VerticalLayout();
-                    actionResultDiv.add(verticalLayout);
 
                     selected.setText(objectAction.toString());
                     objectAction.getParameters();
-                    verticalLayout.add(new Div(new Text("Name: " + objectAction.getName())));
-                    verticalLayout.add(new Div(new Text("Description: " + objectAction.getDescription())));
-                    verticalLayout.add(new Div(new Text("Parameters: " + objectAction.getParameters())));
+                    actionResultDiv.add(new Div(new Text("Name: " + objectAction.getName())));
+                    actionResultDiv.add(new Div(new Text("Description: " + objectAction.getDescription())));
+                    actionResultDiv.add(new Div(new Text("Parameters: " + objectAction.getParameters())));
                     final Div actionResult = new Div();
+                    actionResult.setWidthFull();
 
                     if (objectAction.isAction() && objectAction.getParameters().isEmpty()) {
-                        verticalLayout.add(new Button("run", executeAndHandleResultAction(a, objectAction, actionResult)));
-                        verticalLayout.add(actionResult);
+                        actionResultDiv.add(new Button("run", executeAndHandleResultAction(a, objectAction, actionResult)));
+                        actionResultDiv.add(actionResult);
                     }
+                    actionResultDiv.setWidthFull();
                 }
         );
     }

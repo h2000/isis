@@ -24,9 +24,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -42,6 +43,8 @@ import org.apache.isis.core.metamodel.spec.feature.ObjectMember;
 
 public class ObjectFormView extends VerticalLayout {
 
+    public static final String NULL = "<NULL>";
+
     public ObjectFormView(final ManagedObject managedObject) {
         final ObjectSpecification specification = managedObject.getSpecification();
         final String title = specification.getTitle(null, managedObject);
@@ -52,7 +55,7 @@ public class ObjectFormView extends VerticalLayout {
                 .filter(ObjectMember::isPropertyOrCollection)
                 .collect(Collectors.toList());
         final FormLayout formLayout = new FormLayout();
-        add(formLayout);
+        final VerticalLayout tables = new VerticalLayout();
         objectAssociations.forEach(objectAssociation -> {
             final ManagedObject assocObject = objectAssociation.get(managedObject);
             if (assocObject == null) {
@@ -66,7 +69,7 @@ public class ObjectFormView extends VerticalLayout {
                 break;
             }
             case COLLECTION: {
-                formLayout.add(createCollectionComponent(objectAssociation, assocObject));
+                tables.add(createCollectionComponent(objectAssociation, assocObject));
                 break;
             }
             case VIEW_MODEL:
@@ -88,6 +91,11 @@ public class ObjectFormView extends VerticalLayout {
             }
         });
 
+        add(formLayout);
+        add(new H2("Tables"));
+        add(tables);
+        setWidthFull();
+
     }
 
     private Component createErrorField(final ObjectAssociation objectAssociation, final String error) {
@@ -106,33 +114,61 @@ public class ObjectFormView extends VerticalLayout {
             final ObjectAssociation objectAssociation,
             final ManagedObject assocObject
     ) {
+        final ObjectSpecification assocObjectSpecification = assocObject.getSpecification();
+        final CollectionFacet collectionFacet = assocObjectSpecification.getFacet(CollectionFacet.class);
+
         final String label = "Collection:" + objectAssociation.getName();
         final Object pojo = assocObject.getPojo();
         if (pojo instanceof Collection) {
-            final ComboBox<ManagedObject> listBox = new ComboBox<>();
-            final ObjectSpecification assocObjectSpecification = assocObject.getSpecification();
-            final CollectionFacet facet = assocObjectSpecification.getFacet(CollectionFacet.class);
-            final List<ManagedObject> objects = facet.stream(assocObject).collect(Collectors.toList());
-            listBox.setLabel(label + " #" + objects.size());
-            listBox.setItems(objects);
-            if (!objects.isEmpty()) {
-                listBox.setValue(objects.get(0));
+
+            final List<ManagedObject> objects = collectionFacet.stream(assocObject).collect(Collectors.toList());
+
+            //            final ComboBox<ManagedObject> listBox = new ComboBox<>();
+            //            listBox.setLabel(label + " #" + objects.size());
+            //            listBox.setItems(objects);
+            //            if (!objects.isEmpty()) {
+            //                listBox.setValue(objects.get(0));
+            //            }
+            //            listBox.setItemLabelGenerator(o -> o.titleString(null));
+
+            final Grid<ManagedObject> objectGrid = new Grid<>();
+            if (objects.isEmpty()) {
+                return objectGrid;
             }
-            listBox.setItemLabelGenerator(o -> o.titleString(null));
-            return listBox;
-        } else if (pojo == null) {
+            final ManagedObject firstObject = objects.get(0);
+            final List<ObjectAssociation> properties = firstObject.getSpecification()
+                    .streamAssociations(Contributed.INCLUDED)
+                    .filter(m -> m.getFeatureType().isProperty())
+                    .collect(Collectors.toList());
+            properties.forEach(p -> {
+                final Grid.Column<ManagedObject> column = objectGrid.addColumn(managedObject -> {
+                    final ManagedObject managedObject1 = p.get(managedObject);
+                    if (managedObject1 == null) {
+                        return NULL;
+                    }
+                    return managedObject1.titleString();
+                });
+                column.setHeader(p.getName());
+            });
+            objectGrid.setItems(objects);
+            objectGrid.recalculateColumnWidths();
+            objectGrid.setColumnReorderingAllowed(true);
+            return objectGrid;
+        }
+
+        if (pojo == null) {
             final TextField textField = new TextField();
             textField.setLabel(label);
 
             textField.setValue("<NULL>");
             return textField;
-        } else {
-            final TextField textField = new TextField();
-            textField.setLabel(label);
-
-            textField.setValue("Unknown collection type:" + pojo.getClass());
-            return textField;
         }
+
+        final TextField textField = new TextField();
+        textField.setLabel(label);
+
+        textField.setValue("Unknown collection type:" + pojo.getClass());
+        return textField;
     }
 
     private Component createValueField(final ObjectAssociation association, final ManagedObject assocObject) {
