@@ -77,11 +77,6 @@
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-spring</artifactId>
 		</dependency>
-<!--		<dependency>-->
-<!--	        <groupId>com.vaadin</groupId>-->
-<!--	        <artifactId>vaadin-spring-boot-starter</artifactId>-->
-<!--	        <version>${vaadin.version}</version>-->
-<!--	    </dependency>-->
 
 		<!-- WEB APPLICATION DEPENDENCY BUNDLE -->
 
@@ -90,9 +85,9 @@
 			<artifactId>isis-mavendeps-webapp</artifactId>
 			<type>pom</type>
 		</dependency>
-		
+
 		<!-- JDK11+ SUPPORT -->
-		
+
 		<dependency>
 			<groupId>org.apache.isis.mavendeps</groupId>
 			<artifactId>isis-mavendeps-jdk11</artifactId>

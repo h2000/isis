@@ -1,16 +1,37 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
 package demoapp.webapp.vaadin;
 
+import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResource;
 
 import org.apache.isis.core.metamodel.facets.collections.CollectionFacet;
 import org.apache.isis.core.metamodel.spec.ManagedObject;
@@ -26,16 +47,18 @@ public class ObjectFormView extends VerticalLayout {
         final String title = specification.getTitle(null, managedObject);
         add(new H1(title));
 
-        final Predicate<ObjectAssociation> filter = ObjectMember::isPropertyOrCollection;
-
         final List<? extends ObjectAssociation> objectAssociations = specification
                 .streamAssociations(Contributed.INCLUDED)
-                .filter(filter)
+                .filter(ObjectMember::isPropertyOrCollection)
                 .collect(Collectors.toList());
         final FormLayout formLayout = new FormLayout();
         add(formLayout);
         objectAssociations.forEach(objectAssociation -> {
             final ManagedObject assocObject = objectAssociation.get(managedObject);
+            if (assocObject == null) {
+                formLayout.add(createErrorField(objectAssociation, "assoc. object is null: "));
+                return;
+            }
             final ObjectSpecification propSpec = assocObject.getSpecification();
             switch (propSpec.getBeanSort()) {
             case VALUE: {
@@ -67,18 +90,35 @@ public class ObjectFormView extends VerticalLayout {
 
     }
 
+    private Component createErrorField(final ObjectAssociation objectAssociation, final String error) {
+        return createErrorField("Error:" + objectAssociation.getName(),
+                error + objectAssociation.toString());
+    }
+
+    private Component createErrorField(final String s, final String s2) {
+        final TextField textField = new TextField();
+        textField.setLabel(s);
+        textField.setValue(s2);
+        return textField;
+    }
+
     private Component createCollectionComponent(
             final ObjectAssociation objectAssociation,
-            final ManagedObject assocObject) {
+            final ManagedObject assocObject
+    ) {
         final String label = "Collection:" + objectAssociation.getName();
         final Object pojo = assocObject.getPojo();
         if (pojo instanceof Collection) {
             final ComboBox<ManagedObject> listBox = new ComboBox<>();
-            listBox.setLabel(label);
-            final CollectionFacet facet = objectAssociation.getFacet(CollectionFacet.class);
+            final ObjectSpecification assocObjectSpecification = assocObject.getSpecification();
+            final CollectionFacet facet = assocObjectSpecification.getFacet(CollectionFacet.class);
             final List<ManagedObject> objects = facet.stream(assocObject).collect(Collectors.toList());
+            listBox.setLabel(label + " #" + objects.size());
             listBox.setItems(objects);
-            listBox.setItemLabelGenerator(o -> assocObject.getSpecification().getTitle(null, o));
+            if (!objects.isEmpty()) {
+                listBox.setValue(objects.get(0));
+            }
+            listBox.setItemLabelGenerator(o -> o.titleString(null));
             return listBox;
         } else if (pojo == null) {
             final TextField textField = new TextField();
@@ -97,7 +137,27 @@ public class ObjectFormView extends VerticalLayout {
 
     private Component createValueField(final ObjectAssociation association, final ManagedObject assocObject) {
         // TODO how to handle object type / id
-        return createTextField(association, assocObject);
+
+        // How to handle blobs?
+        //        final BlobValueSemanticsProvider blobValueFacet = association.getFacet(BlobValueSemanticsProvider.class);
+        //        if (blobValueFacet != null) {
+        //            final java.awt.Image aByte = blobValueFacet.getParser(assocObject);
+        //            new Image(aByte);
+        //            return null;
+        //        }
+        final String description = assocObject.getSpecification().streamFacets()
+                .map(facet -> facet.getClass().getName())
+                .collect(Collectors.joining("\n"));
+
+        final TextField textField = createTextField(association, assocObject);
+        //        Tooltips.getCurrent().setTooltip(textField, description);
+        return textField;
+    }
+
+    private Image convertToImage(final byte[] imageData) {
+        final StreamResource streamResource = new StreamResource("isr",
+                (InputStreamFactory) () -> new ByteArrayInputStream(imageData));
+        return new Image(streamResource, "photo");
     }
 
     private TextField createTextField(final ObjectAssociation association, final ManagedObject assocObject) {

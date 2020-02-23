@@ -16,31 +16,26 @@
  *  specific language governing permissions and limitations
  *  under the License.
  */
-package demoapp.webapp.vaadin.model;
+package demoapp.webapp.vaadin;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+
+import org.apache.isis.core.metamodel.facets.collections.CollectionFacet;
 import org.apache.isis.core.metamodel.spec.ManagedObject;
-import org.apache.isis.core.metamodel.spec.feature.ObjectAction;
-import org.apache.isis.core.metamodel.spec.feature.ObjectAction.Util;
+import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 
-import lombok.Data;
+public class TableView extends VerticalLayout {
+    public TableView(final ManagedObject collection) {
+        final ObjectSpecification assocObjectSpecification = collection.getSpecification();
+        final CollectionFacet facet = assocObjectSpecification.getFacet(CollectionFacet.class);
+        final List<ManagedObject> objects = facet.stream(collection).collect(Collectors.toList());
 
-@Data
-public class ServiceAndActionUiModel {
-
-    final EntityUiModel entityUiModel;
-    final String serviceName;
-    // TODO final ServiceActionLinkFactory linkAndLabelFactory;
-    // TODO final EntityModel serviceEntityModel;
-    final ObjectAction objectAction;
-    final boolean isFirstSection;
-
-    Optional<String> cssClassFa() {
-        return Optional.ofNullable(Util.cssClassFaFor(objectAction));
-    }
-
-    Optional<String> cssClass(final ManagedObject managedObject) {
-        return Optional.ofNullable(Util.cssClassFor(objectAction, managedObject));
+        final Grid<ManagedObject> objectGrid = new Grid<>();
+        objectGrid.setItems(objects);
+        add(objectGrid);
     }
 }

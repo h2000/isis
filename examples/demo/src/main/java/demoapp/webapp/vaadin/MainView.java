@@ -1,9 +1,29 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
 package demoapp.webapp.vaadin;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.contextmenu.MenuItem;
@@ -56,9 +76,9 @@ public class MainView extends VerticalLayout {
         final BS3MenuBars bs3MenuBars = menuBarsService.menuBars(Type.DEFAULT);
 
         final MenuBar menuBar = new MenuBar();
-        final Text selected = new Text("");
-        final Div details = new Div();
-        final Div message = new Div(new Text("Selected: "), selected, details);
+        final Text selectedMenuItem = new Text("");
+        final Div actionResultDiv = new Div();
+        final Div message = new Div(new Text("Selected: "), selectedMenuItem, actionResultDiv);
 
         add(menuBar);
         add(message);
@@ -70,42 +90,61 @@ public class MainView extends VerticalLayout {
         menuSectionUiModels.forEach(sectionUiModel -> {
                     final MenuItem menuItem = menuBar.addItem(sectionUiModel.getName());
                     final SubMenu subMenu = menuItem.getSubMenu();
-                    sectionUiModel.getServiceAndActionUiModels().forEach(a -> {
-                        final ObjectAction objectAction = a.getObjectAction();
-                        subMenu.addItem(objectAction.getName(),
-                                e -> {
-                                    details.removeAll();
-                                    final VerticalLayout verticalLayout = new VerticalLayout();
-                                    details.add(verticalLayout);
-
-                                    selected.setText(objectAction.toString());
-                                    objectAction.getParameters();
-                                    verticalLayout.add(new Div(new Text("Name: " + objectAction.getName())));
-                                    verticalLayout.add(new Div(new Text("Description: " + objectAction.getDescription())));
-                                    verticalLayout.add(new Div(new Text("Parameters: " + objectAction.getParameters())));
-                                    final Div actionResult = new Div();
-
-                                    if (objectAction.isAction() && objectAction.getParameters().isEmpty()) {
-                                        verticalLayout.add(new Button("run", buttonClickEvent -> {
-                                            final ManagedObject sectionObject = a.getEntityUiModel().getManagedObject();
-                                            final ManagedObject result = objectAction
-                                                    .execute(
-                                                            sectionObject,
-                                                            null,
-                                                            Collections.emptyList(),
-                                                            InteractionInitiatedBy.USER
-                                                    );
-                                            actionResult.removeAll();
-                                            actionResult.add(new ObjectFormView(result));
-                                        }));
-                                        verticalLayout.add(actionResult);
-                                    }
-                                }
-                        );
-                        objectAction.getSemantics();
-                    });
+                    sectionUiModel.getServiceAndActionUiModels().forEach(a ->
+                            createActionOverviewAndBindRunAction(selectedMenuItem, actionResultDiv, subMenu, a));
                 }
         );
+    }
+
+    private void createActionOverviewAndBindRunAction(
+            final Text selected,
+            final Div actionResultDiv,
+            final SubMenu subMenu,
+            final ServiceAndActionUiModel a
+    ) {
+        final ObjectAction objectAction = a.getObjectAction();
+        subMenu.addItem(objectAction.getName(),
+                e -> {
+                    actionResultDiv.removeAll();
+                    final VerticalLayout verticalLayout = new VerticalLayout();
+                    actionResultDiv.add(verticalLayout);
+
+                    selected.setText(objectAction.toString());
+                    objectAction.getParameters();
+                    verticalLayout.add(new Div(new Text("Name: " + objectAction.getName())));
+                    verticalLayout.add(new Div(new Text("Description: " + objectAction.getDescription())));
+                    verticalLayout.add(new Div(new Text("Parameters: " + objectAction.getParameters())));
+                    final Div actionResult = new Div();
+
+                    if (objectAction.isAction() && objectAction.getParameters().isEmpty()) {
+                        verticalLayout.add(new Button("run", executeAndHandleResultAction(a, objectAction, actionResult)));
+                        verticalLayout.add(actionResult);
+                    }
+                }
+        );
+    }
+
+    private ComponentEventListener<ClickEvent<Button>> executeAndHandleResultAction(
+            final ServiceAndActionUiModel a,
+            final ObjectAction objectAction,
+            final Div actionResult
+    ) {
+        return buttonClickEvent -> {
+            final ManagedObject actionOwner = a.getEntityUiModel().getManagedObject();
+            final ManagedObject result = objectAction
+                    .execute(
+                            actionOwner,
+                            null,
+                            Collections.emptyList(),
+                            InteractionInitiatedBy.USER
+                    );
+            actionResult.removeAll();
+            if (result.getSpecification().isParentedOrFreeCollection()) {
+                actionResult.add(new TableView(result));
+            } else {
+                actionResult.add(new ObjectFormView(result));
+            }
+        };
     }
 
     // copied from org.apache.isis.viewer.wicket.ui.components.actionmenu.serviceactions.ServiceActionUtil.buildMenu
