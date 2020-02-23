@@ -53,9 +53,9 @@ public class AssociatedActionDemo extends DemoStub {
 
     @ActionLayout(promptStyle = PromptStyle.DIALOG_MODAL)
     @Action(associateWith="items")
-    public AssociatedActionDemo doSomethingWithItems(Set<DemoItem> items) {
+    public AssociatedActionDemo doSomethingWithItems(final Set<DemoItem> items) {
         if(items!=null) {
-            items.forEach(item->messageService.informUser(item.getName()));    
+            items.forEach(item->messageService.informUser(item.getName()));
         }
         return this;
     }
@@ -63,10 +63,10 @@ public class AssociatedActionDemo extends DemoStub {
     @Override
     public void initDefaults() {
         items.clear();
-        items.add(DemoItem.of("first2"));
+        items.add(DemoItem.of("first"));
         items.add(DemoItem.of("second"));
         items.add(DemoItem.of("third"));
         items.add(DemoItem.of("last"));
     }
-    
+
 }

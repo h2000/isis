@@ -1,13 +1,16 @@
 package demoapp.webapp.vaadin.model;
 
 import java.util.Optional;
-import lombok.Data;
+
 import org.apache.isis.core.metamodel.spec.ManagedObject;
 import org.apache.isis.core.metamodel.spec.feature.ObjectAction;
 import org.apache.isis.core.metamodel.spec.feature.ObjectAction.Util;
 
+import lombok.Data;
+
 @Data
 public class ServiceAndActionUiModel {
+
     final EntityUiModel entityUiModel;
     final String serviceName;
     // TODO final ServiceActionLinkFactory linkAndLabelFactory;

@@ -1,5 +1,9 @@
 package demoapp.webapp.vaadin;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.contextmenu.MenuItem;
@@ -8,13 +12,11 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-import demoapp.webapp.vaadin.model.EntityUiModel;
-import demoapp.webapp.vaadin.model.MenuSectionUiModel;
-import demoapp.webapp.vaadin.model.ServiceAndActionUiModel;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import lombok.val;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.apache.isis.applib.layout.component.ServiceActionLayoutData;
 import org.apache.isis.applib.layout.menubars.MenuSection;
 import org.apache.isis.applib.layout.menubars.bootstrap3.BS3Menu;
@@ -30,9 +32,11 @@ import org.apache.isis.core.metamodel.specloader.SpecificationLoader;
 import org.apache.isis.core.runtime.session.IsisSessionFactory;
 import org.apache.isis.core.runtimeservices.menubars.bootstrap3.MenuBarsServiceBS3;
 import org.apache.isis.core.webapp.context.IsisWebAppCommonContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import demoapp.webapp.vaadin.model.EntityUiModel;
+import demoapp.webapp.vaadin.model.MenuSectionUiModel;
+import demoapp.webapp.vaadin.model.ServiceAndActionUiModel;
+import lombok.val;
 
 @Route()
 public class MainView extends VerticalLayout {
@@ -40,15 +44,15 @@ public class MainView extends VerticalLayout {
     private final Logger log = LogManager.getLogger(MainView.class);
 
     public MainView(
-        @Autowired final IsisSessionFactory isisSessionFactory,
-        @Autowired final SpecificationLoader specificationLoader,
-        @Autowired final MetaModelContext metaModelContext,
-        @Autowired final IsisConfiguration isisConfiguration
+            @Autowired final IsisSessionFactory isisSessionFactory,
+            @Autowired final SpecificationLoader specificationLoader,
+            @Autowired final MetaModelContext metaModelContext,
+            @Autowired final IsisConfiguration isisConfiguration
     ) {
         final IsisWebAppCommonContext isisWebAppCommonContext = IsisWebAppCommonContext.of(metaModelContext);
 
         final MenuBarsServiceBS3 menuBarsService = metaModelContext.getServiceRegistry()
-            .lookupServiceElseFail(MenuBarsServiceBS3.class);
+                .lookupServiceElseFail(MenuBarsServiceBS3.class);
         final BS3MenuBars bs3MenuBars = menuBarsService.menuBars(Type.DEFAULT);
 
         final MenuBar menuBar = new MenuBar();
@@ -64,52 +68,51 @@ public class MainView extends VerticalLayout {
         menuSectionUiModels.forEach(m -> log.warn("\t{}", m));
 
         menuSectionUiModels.forEach(sectionUiModel -> {
-                final MenuItem menuItem = menuBar.addItem(sectionUiModel.getName());
-                final SubMenu subMenu = menuItem.getSubMenu();
-                sectionUiModel.getServiceAndActionUiModels().forEach(a -> {
-                    final ObjectAction objectAction = a.getObjectAction();
-                    subMenu.addItem(objectAction.getName(),
-                        e -> {
-                            details.removeAll();
-                            final VerticalLayout verticalLayout = new VerticalLayout();
-                            details.add(verticalLayout);
+                    final MenuItem menuItem = menuBar.addItem(sectionUiModel.getName());
+                    final SubMenu subMenu = menuItem.getSubMenu();
+                    sectionUiModel.getServiceAndActionUiModels().forEach(a -> {
+                        final ObjectAction objectAction = a.getObjectAction();
+                        subMenu.addItem(objectAction.getName(),
+                                e -> {
+                                    details.removeAll();
+                                    final VerticalLayout verticalLayout = new VerticalLayout();
+                                    details.add(verticalLayout);
 
-                            selected.setText(objectAction.toString());
-                            objectAction.getParameters();
-                            verticalLayout.add(new Div(new Text("Name: " + objectAction.getName())));
-                            verticalLayout.add(new Div(new Text("Description: " + objectAction.getDescription())));
-                            verticalLayout.add(new Div(new Text("Parameters: " + objectAction.getParameters())));
-                            final Div actionResult = new Div();
+                                    selected.setText(objectAction.toString());
+                                    objectAction.getParameters();
+                                    verticalLayout.add(new Div(new Text("Name: " + objectAction.getName())));
+                                    verticalLayout.add(new Div(new Text("Description: " + objectAction.getDescription())));
+                                    verticalLayout.add(new Div(new Text("Parameters: " + objectAction.getParameters())));
+                                    final Div actionResult = new Div();
 
-
-                            if (objectAction.isAction() && objectAction.getParameters().isEmpty()) {
-                                verticalLayout.add(new Button("run", buttonClickEvent -> {
-                                    final ManagedObject sectionObject = a.getEntityUiModel().getManagedObject();
-                                    final ManagedObject result = objectAction
-                                        .execute(
-                                            sectionObject,
-                                            null,
-                                            Collections.emptyList(),
-                                            InteractionInitiatedBy.USER
-                                        );
-                                    actionResult.removeAll();
-                                    actionResult.add(new ObjectFormView(result));
-                                }));
-                                verticalLayout.add(actionResult);
-                            }
-                        }
-                    );
-                    objectAction.getSemantics();
-                });
-            }
+                                    if (objectAction.isAction() && objectAction.getParameters().isEmpty()) {
+                                        verticalLayout.add(new Button("run", buttonClickEvent -> {
+                                            final ManagedObject sectionObject = a.getEntityUiModel().getManagedObject();
+                                            final ManagedObject result = objectAction
+                                                    .execute(
+                                                            sectionObject,
+                                                            null,
+                                                            Collections.emptyList(),
+                                                            InteractionInitiatedBy.USER
+                                                    );
+                                            actionResult.removeAll();
+                                            actionResult.add(new ObjectFormView(result));
+                                        }));
+                                        verticalLayout.add(actionResult);
+                                    }
+                                }
+                        );
+                        objectAction.getSemantics();
+                    });
+                }
         );
     }
 
     // copied from org.apache.isis.viewer.wicket.ui.components.actionmenu.serviceactions.ServiceActionUtil.buildMenu
     public static List<MenuSectionUiModel> buildMenuModel(
-        final Logger log,
-        final IsisWebAppCommonContext commonContext,
-        final BS3MenuBars menuBars
+            final Logger log,
+            final IsisWebAppCommonContext commonContext,
+            final BS3MenuBars menuBars
     ) {
 
         // TODO handle menuBars.getSecondary(), menuBars.getTertiary()
@@ -138,23 +141,23 @@ public class MainView extends VerticalLayout {
                     }
                     // TODO Wicket final EntityModel entityModel = EntityModel.ofAdapter(commonContext, serviceAdapter);
                     final EntityUiModel entityUiModel =
-                        new EntityUiModel(commonContext, serviceAdapter);
+                            new EntityUiModel(commonContext, serviceAdapter);
 
                     final ObjectAction objectAction =
-                        serviceAdapter
-                            .getSpecification()
-                            .getObjectAction(actionLayoutData.getId())
-                            .orElse(null);
+                            serviceAdapter
+                                    .getSpecification()
+                                    .getObjectAction(actionLayoutData.getId())
+                                    .orElse(null);
                     if (objectAction == null) {
                         log.warn("No such action {}", actionLayoutData.getId());
                         continue;
                     }
                     final ServiceAndActionUiModel serviceAndActionUiModel =
-                        new ServiceAndActionUiModel(
-                            entityUiModel,
-                            actionLayoutData.getNamed(),
-                            objectAction,
-                            isFirstSection);
+                            new ServiceAndActionUiModel(
+                                    entityUiModel,
+                                    actionLayoutData.getNamed(),
+                                    objectAction,
+                                    isFirstSection);
 
                     menuSectionUiModel.addAction(serviceAndActionUiModel);
                     isFirstSection = false;

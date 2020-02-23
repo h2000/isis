@@ -1,12 +1,14 @@
 package demoapp.webapp.vaadin.model;
 
-import lombok.Data;
 import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.core.metamodel.spec.ManagedObject;
 import org.apache.isis.core.webapp.context.IsisWebAppCommonContext;
 
+import lombok.Data;
+
 @Data
 public class EntityUiModel {
+
     private final IsisWebAppCommonContext commonContext;
     private final ManagedObject managedObject;
 
