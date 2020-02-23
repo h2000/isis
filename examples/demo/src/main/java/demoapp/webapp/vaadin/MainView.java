@@ -28,10 +28,13 @@ import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.contextmenu.SubMenu;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.Theme;
+import com.vaadin.flow.theme.lumo.Lumo;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,6 +62,9 @@ import demoapp.webapp.vaadin.model.ServiceAndActionUiModel;
 import lombok.val;
 
 @Route()
+@JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
+//@Theme(value = Material.class, variant = Material.DARK)
+@Theme(value = Lumo.class)
 public class MainView extends VerticalLayout {
 
     private final Logger log = LogManager.getLogger(MainView.class);

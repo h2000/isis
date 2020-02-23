@@ -27,8 +27,9 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.server.InputStreamFactory;
@@ -69,6 +70,7 @@ public class ObjectFormView extends VerticalLayout {
                 break;
             }
             case COLLECTION: {
+                tables.add(new Label(objectAssociation.getName()));
                 tables.add(createCollectionComponent(objectAssociation, assocObject));
                 break;
             }
@@ -92,7 +94,7 @@ public class ObjectFormView extends VerticalLayout {
         });
 
         add(formLayout);
-        add(new H2("Tables"));
+        add(new H3("Tables"));
         add(tables);
         setWidthFull();
 
